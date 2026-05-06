@@ -29,3 +29,43 @@ bpy.context.view_layer.update()
 after = set(bpy.context.scene.object)
 new_objects = list(after - before)
 
+# Deselect everything first
+bpy.ops.object.select_all(action='DESELECT')
+
+# Select imported objects
+for obj in new_objects:
+    obj.select_set(True)
+
+# Make one active object
+if new_objects:
+    bpy.context.view_layer.objects.active = new_objects[0]
+
+# Try to frame in viewport (needs VEIW_3D context)
+for area in bpy.context.screen.areas:
+    if area.type == 'VIEW_3D':
+        for region in area.regions:
+            if region.type == 'WINDOW':
+                override = {
+                    'area': area,
+                    'region': region,
+                    'scene': bpy.context.scene,
+                    'screen': bpy.context.screen,
+                }
+                
+                with bpy.context.temp_override(**override):
+                    bpy.ops.view3d.view_selected(use_all_regions=False)
+                
+                break
+        break
+
+# Force redraw
+for window in bpy.context.window_manager.windows:
+    for area in window.screen.areas:
+        if area.type == 'VIEW_3D':
+            area.tag_redraw()
+
+# Normalize object - bring object to origin
+bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='BOUNDS')
+obj.location = (0, 0, 0,)
+
+        
